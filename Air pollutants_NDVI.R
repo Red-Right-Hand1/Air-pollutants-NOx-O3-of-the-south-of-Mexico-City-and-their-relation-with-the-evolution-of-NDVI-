@@ -505,12 +505,18 @@ data_exp = data.frame(
     NOx = NOX_VI[,2], O3 = O3_VI[,2], NDVI = NDVI_df[,2])
 
 ##Posteriormente se realiza una prueba de D'Agostino para la normalidad de
-##los datos.
+##los datos, donde (con un alfa de 0.05):
+##H0 = Los datos tienen una distribución normal.
+##Ha = Los datos no tienen una distribución normal.
+##Y, si la oblicuidad es 0 = distribución normal.
+##Si es menor a 1 = distribución medio normal.
+##Mayor a 1 = distribución exponencial.
 agostino.test(data_exp$NOx) ##NOx
 agostino.test(data_exp$O3) ##O3
 agostino.test(data_exp$NDVI) ##NDVI
 
-##Al presentar oblicuidad, contrastar con gráficas de densidad.
+##Al fallar el rechazo de H0 y contar con una oblicuidad muy cercana a 0,
+##contrastar con gráficas de densidad.
 NOX_dist = ggplot(data_exp, aes(x = NOx)) + geom_density() + 
     geom_vline(aes(xintercept=mean(NOx), size = 2.5, color = "gray32"),
                color = "#E69F00", linetype = "dashed", size = 2) +
@@ -560,7 +566,7 @@ NDVI_dist = ggplot(data_exp, aes(x = NDVI)) + geom_density() +
         axis.line.y = element_line(color="black", size = 0.5)) 
 NDVI_dist
 
-##Para realizar este análisis, se utiliza un análisis regresión lineal simple,
+##Para realizar este análisis, se utiliza una regresión lineal simple,
 ##con una prueba de significancia de la pendiente. Se tienen dos hipótesis:
 ##Ho = No existe relación significativa entre los contaminantes y el VI,
 ##por lo que las medias son iguales.
@@ -601,6 +607,10 @@ estad_prueb = function(data) {
 }
 estad_prueb(rel_NOX)
 estad_prueb(rel_O3)
+
+##Para contrastar los datos, realizar una prueba de correlación de Pearson.
+cor.test(rel_NOX$x, rel_NOX$y, method = "pearson")
+cor.test(rel_O3$x, rel_NOX$y, method = "pearson")
 
 ##PLOTS
 
