@@ -1,15 +1,18 @@
 ##LIBRERÍAS 
-library(readxl)
 library(dplyr)
-library(gridExtra)
-library(ggplot2)
-library(raster)
-library(MODISTools)
-library(reshape2)
-library(moments)
 library(egg)
+library(ggplot2)
+library(gridExtra)
+library(imputeTS)
+library(np)
+library(MODISTools)
+library(moments)
+library(naniar)
+library(raster)
+library(readxl)
+library(reshape2)
 
-##Versión de Rstudio: Version 1.4.1106.
+##Versión de R: Version 4.1.0.
 
 ##LIMPIEZA DE DATOS
 
@@ -41,8 +44,8 @@ PIXQ_data_Terra =
               site_name = "testsite",
               internal = TRUE,
               progress = FALSE)
-NDVI_r = mt_to_raster(df = NDVI_data_Terra)
-PIXQ_r = mt_to_raster(df = PIXQ_data_Terra)
+NDVI_r = mt_to_raster(df = NDVI_data_Terra, reproject = FALSE)
+PIXQ_r = mt_to_raster(df = PIXQ_data_Terra, reproject = FALSE)
 
 ##Se limpian los datos usando los data sets de la fiabilidad de los pixeles.
 ##Para realizar esto, una máscara con base en estos datos con la que se 
@@ -107,1029 +110,643 @@ VI2018 = data.frame(coor, z = VI2018)
 VI2019 = data.frame(coor, z = VI2019)
 VI2020 = data.frame(coor, z = VI2020)
 
-##Para los datos de contaminación, descargar en el directorio el archivo 
-##zip (bases de datos desde 2001 a 2020) y extraer todos los archivos 
-##(formato .xls). La url de la base de datos es:
-##http://www.aire.cdmx.gob.mx/default.php?opc=%27aKBh%27
-unzip(zipfile = "01RAMA.zip")
-unzip(zipfile = "02RAMA.zip")
-unzip(zipfile = "03RAMA.zip")
-unzip(zipfile = "04RAMA.zip")
-unzip(zipfile = "05RAMA.zip")
-unzip(zipfile = "06RAMA.zip")
-unzip(zipfile = "07RAMA.zip")
-unzip(zipfile = "08RAMA.zip")
-unzip(zipfile = "09RAMA.zip")
-unzip(zipfile = "10RAMA.zip")
-unzip(zipfile = "11RAMA.zip")
-unzip(zipfile = "12RAMA.zip")
-unzip(zipfile = "13RAMA.zip")
-unzip(zipfile = "14RAMA.zip")
-unzip(zipfile = "15RAMA.zip")
-unzip(zipfile = "16RAMA.zip")
-unzip(zipfile = "17RAMA.zip")
-unzip(zipfile = "18RAMA.zip")
-unzip(zipfile = "19RAMA.zip")
-unzip(zipfile = "20RAMA.zip")
-
-##Cargar cada uno de los archivos por año para monóxidos de carbono (CO) y
-##oxidos de nitrógeno (NOx) en variables para utilizar como data frames.
-NOX_01_data = read_xls("2001NOX.xls")
-O3_01_data = read_xls("2001O3.xls")
-NOX_02_data = read_xls("2002NOX.xls")
-O3_02_data = read_xls("2002O3.xls")
-NOX_03_data = read_xls("2003NOX.xls")
-O3_03_data = read_xls("2003O3.xls")
-NOX_04_data = read_xls("2004NOX.xls")
-O3_04_data = read_xls("2004O3.xls")
-NOX_05_data = read_xls("2005NOX.xls")
-O3_05_data = read_xls("2005O3.xls")
-NOX_06_data = read_xls("2006NOX.xls")
-O3_06_data = read_xls("2006O3.xls")
-NOX_07_data = read_xls("2007NOX.xls")
-O3_07_data = read_xls("2007O3.xls")
-NOX_08_data = read_xls("2008NOX.xls")
-O3_08_data = read_xls("2008O3.xls")
-NOX_09_data = read_xls("2009NOX.xls")
-O3_09_data = read_xls("2009O3.xls")
-NOX_10_data = read_xls("2010NOX.xls")
-O3_10_data = read_xls("2010O3.xls")
-NOX_11_data = read_xls("2011NOX.xls")
-O3_11_data = read_xls("2011O3.xls")
-NOX_12_data = read_xls("2012NOX.xls")
-O3_12_data = read_xls("2012O3.xls")
-NOX_13_data = read_xls("2013NOX.xls")
-O3_13_data = read_xls("2013O3.xls")
-NOX_14_data = read_xls("2014NOX.xls")
-O3_14_data = read_xls("2014O3.xls")
-NOX_15_data = read_xls("2015NOX.xls")
-O3_15_data = read_xls("2015O3.xls")
-NOX_16_data = read_xls("2016NOX.xls")
-O3_16_data = read_xls("2016O3.xls")
-NOX_17_data = read_xls("2017NOX.xls")
-O3_17_data = read_xls("2017O3.xls")
-NOX_18_data = read_xls("2018NOX.xls")
-O3_18_data = read_xls("2018O3.xls")
-NOX_19_data = read_xls("2019NOX.xls")
-O3_19_data = read_xls("2019O3.xls")
-NOX_20_data = read_xls("2020NOX.xls")
-O3_20_data = read_xls("2020O3.xls")
-
-##Al ser esta base de datos en formato "tbl_df", convertir cada uno 
-##en un formato adecuado (en este caso, a data frame).
-NOX_01_data = as.data.frame(NOX_01_data)
-O3_01_data = as.data.frame(O3_01_data)
-NOX_02_data = as.data.frame(NOX_02_data)
-O3_02_data = as.data.frame(O3_02_data)
-NOX_03_data = as.data.frame(NOX_03_data)
-O3_03_data = as.data.frame(O3_03_data)
-NOX_04_data = as.data.frame(NOX_04_data)
-O3_04_data = as.data.frame(O3_04_data)
-NOX_05_data = as.data.frame(NOX_05_data)
-O3_05_data = as.data.frame(O3_05_data)
-NOX_06_data = as.data.frame(NOX_06_data)
-O3_06_data = as.data.frame(O3_06_data)
-NOX_07_data = as.data.frame(NOX_07_data)
-O3_07_data = as.data.frame(O3_07_data)
-NOX_08_data = as.data.frame(NOX_08_data)
-O3_08_data = as.data.frame(O3_08_data)
-NOX_09_data = as.data.frame(NOX_09_data)
-O3_09_data = as.data.frame(O3_09_data)
-NOX_10_data = as.data.frame(NOX_10_data)
-O3_10_data = as.data.frame(O3_10_data)
-NOX_11_data = as.data.frame(NOX_11_data)
-O3_11_data = as.data.frame(O3_11_data)
-NOX_12_data = as.data.frame(NOX_12_data)
-O3_12_data = as.data.frame(O3_12_data)
-NOX_13_data = as.data.frame(NOX_13_data)
-O3_13_data = as.data.frame(O3_13_data)
-NOX_14_data = as.data.frame(NOX_14_data)
-O3_14_data = as.data.frame(O3_14_data)
-NOX_15_data = as.data.frame(NOX_15_data)
-O3_15_data = as.data.frame(O3_15_data)
-NOX_16_data = as.data.frame(NOX_16_data)
-O3_16_data = as.data.frame(O3_16_data)
-NOX_17_data = as.data.frame(NOX_17_data)
-O3_17_data = as.data.frame(O3_17_data)
-NOX_18_data = as.data.frame(NOX_18_data)
-O3_18_data = as.data.frame(O3_18_data)
-NOX_19_data = as.data.frame(NOX_19_data)
-O3_19_data = as.data.frame(O3_19_data)
-NOX_20_data = as.data.frame(NOX_20_data)
-O3_20_data = as.data.frame(O3_20_data)
-
-##En cada data frame existen columnas que sólo tienen valores nulos
-##(aquí representados como "-99"), por lo que se eliminan de cada 
-##data frame -creando el primer subset, sin la fecha y sin las columnas
-##con puros valores nulos-. De igual manera, se elimina la columna de
-##hora de muestreo, debido a que no importará para este análisis. De
-##igual manera, los valores nulos en las columnas con datos relevantes
-##serán convertidos en 0. Sólo se usarán las columnas que cuentan con
-##los valores de las estaciones del sur de la CDMX, eliminando las otras. 
-null_del = function(x) {
-    x[colMeans(x) == -99] = NULL
-    x[x == -99] = 0
-    return(x)
+##Para los datos de contaminantes, radiación y temperatura, se descargan los
+##datasets directo de las páginas de datos abiertos, yendo desde 2001 hasta
+##2020.
+url.poll = 
+    "http://datosabiertos.aire.cdmx.gob.mx:8080/opendata/excel/RAMA/00RAMA.zip"
+url.rad = 
+    "http://datosabiertos.aire.cdmx.gob.mx:8080/opendata/excel/RADIACION/00RADIACION.zip"
+url.temp = 
+    "http://datosabiertos.aire.cdmx.gob.mx:8080/opendata/excel/REDMET/00REDMET.zip"
+substrpoll.ini = substring(url.poll, first = 1, last = 63)
+substrpoll.fin = substring(url.poll, first = 66)
+substrrad.ini = substring(url.rad, first = 1, last = 68)
+substrrad.fin = substring(url.rad, first = 71)
+substrtemp.ini = substring(url.temp, first = 1, last = 65)
+substrtemp.fin = substring(url.temp, first = 68)
+years = c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
+          "11", "12", "13", "14", "15", "16", "17", "18", "19", "20")
+dest = 
+    "C:/Users/Tabby/Documents/R/Air pollutants NOx O3 of the south of Mexico City and their relation with the evolution of NDVI/Data/"
+for(i in 1:length(years)) {
+    URLPoll = paste0(
+        substrpoll.ini, years[i], substrpoll.fin)
+    dest.poll = paste0(dest, years[i], substrpoll.fin)
+    download.file(URLPoll, destfile = dest.poll)
+    URLRad = paste0(
+        substrrad.ini, years[i], substrrad.fin)
+    dest.rad = paste0(dest, years[i], substrrad.fin)
+    download.file(URLRad, destfile = dest.rad)
+    URLTemp = paste0(
+        substrtemp.ini, years[i], substrtemp.fin)
+    dest.temp = paste0(dest, years[i], substrtemp.fin)
+    download.file(URLTemp, destfile = dest.temp)
 }
-clean_NOX01 = NOX_01_data[, 19]
-clean_O301 = O3_01_data[, c(18:19)]
-clean_NOX02 = NOX_02_data[, c(19)]
-clean_O302 = O3_02_data[, c(11, 18, 21)]
-clean_NOX03 = NOX_03_data[, c(9, 19)]
-clean_O303 = O3_03_data[, c(11, 15, 18, 21)]
-clean_NOX04 = NOX_04_data[, c(9, 19)]
-clean_O304 = O3_04_data[, c(11, 15, 18:19, 21)]
-clean_NOX05 = NOX_05_data[, c(9, 18)]
-clean_O305 = O3_05_data[, c(11, 15, 17:18, 20, 22)]
-clean_NOX06 = NOX_06_data[, c(9, 18)]
-clean_O306 = O3_06_data[, c(11, 15, 17:18, 20, 22)]
-clean_NOX07 = NOX_07_data[, c(9, 17)]
-clean_O307 = O3_07_data[, c(11, 14, 17, 19, 21, 24)]
-clean_NOX08 = NOX_08_data[, c(9, 17)]
-clean_O308 = O3_08_data[, c(11, 14, 17, 19, 21, 24)]
-clean_NOX09 = NOX_09_data[, c(9, 17)]
-clean_O309 = O3_09_data[, c(11, 14, 16, 17, 19, 21, 24)]
-clean_NOX10 = NOX_10_data[, c(9, 16)]
-clean_O310 = O3_10_data[, c(11, 14, 16:17, 19, 21, 24)]
-clean_NOX11 = NOX_11_data[, c(6:8, 20, 23:24)]
-clean_O311 = O3_11_data[, c(5:7, 15, 19, 22:23)]
-clean_NOX12 = NOX_12_data[, c(6:8, 18, 20, 23, 26:28)]
-clean_O312 = O3_12_data[, c(5:7, 16, 18, 21, 24:26)]
-clean_NOX13 = NOX_13_data[, c(6:8, 18, 20, 23, 26:28)]
-clean_O313 = O3_13_data[, c(6:8, 18, 20, 23, 26:28)]
-clean_NOX14 = NOX_14_data[, c(6:7, 9, 19, 21, 24, 27:29)]
-clean_O314 = O3_14_data[, c(6:7, 9, 19, 21, 24, 27:29)]
-clean_NOX15 = NOX_15_data[, c(9:11, 23, 25, 28, 31:33)]
-clean_O315 = O3_15_data[, c(5, 10:12, 25, 27, 30, 33:35)]
-clean_NOX16 = NOX_16_data[, c(9:11, 24, 26, 28, 31:32)]
-clean_O316 = O3_16_data[, c(5, 10:12, 26, 28, 30, 33:34)]
-clean_NOX17 = NOX_17_data[, c(9:11, 24, 26, 28, 31:32)]
-clean_O317 = O3_17_data[, c(5, 10:12, 26, 28, 30, 33:34)]
-clean_NOX18 = NOX_18_data[, c(8:10, 23, 25, 27, 30:31)]
-clean_O318 = O3_18_data[, c(5, 10:12, 26, 28, 30, 33:34)]
-clean_NOX19 = NOX_19_data[, c(9:11, 25, 28, 30, 33:34)]
-clean_O319 = O3_19_data[, c(5, 10:12, 28, 31, 33, 36:37)]
-clean_NOX20 = NOX_20_data[, c(9:11, 25, 28, 30, 33:34)]
-clean_O320 = O3_20_data[, c(5, 10:12, 27, 30, 32, 35:36)]
-clean_NOX01[clean_NOX01 == -99] = 0
-clean_O301 = null_del(clean_O301)
-clean_NOX02[clean_NOX02 == -99] = 0
-clean_O302 = null_del(clean_O302)
-clean_NOX03 = null_del(clean_NOX03)
-clean_O303 = null_del(clean_O303)
-clean_NOX04 = null_del(clean_NOX04)
-clean_O304 = null_del(clean_O304)
-clean_NOX05 = null_del(clean_NOX05)
-clean_O305 = null_del(clean_O305)
-clean_NOX06 = null_del(clean_NOX06)
-clean_O306 = null_del(clean_O306)
-clean_NOX07 = null_del(clean_NOX07)
-clean_O307 = null_del(clean_O307)
-clean_NOX08 = null_del(clean_NOX08)
-clean_O308 = null_del(clean_O308)
-clean_NOX09 = null_del(clean_NOX09)
-clean_O309 = null_del(clean_O309)
-clean_NOX10 = null_del(clean_NOX10)
-clean_O310 = null_del(clean_O310)
-clean_NOX11 = null_del(clean_NOX11)
-clean_O311 = null_del(clean_O311)
-clean_NOX12 = null_del(clean_NOX12)
-clean_O312 = null_del(clean_O312)
-clean_NOX13 = null_del(clean_NOX13)
-clean_O313 = null_del(clean_O313)
-clean_NOX14 = null_del(clean_NOX14)
-clean_O314 = null_del(clean_O314)
-clean_NOX15 = null_del(clean_NOX15)
-clean_O315 = null_del(clean_O315)
-clean_NOX16 = null_del(clean_NOX16)
-clean_O316 = null_del(clean_O316)
-clean_NOX17 = null_del(clean_NOX17)
-clean_O317 = null_del(clean_O317)
-clean_NOX18 = null_del(clean_NOX18)
-clean_O318 = null_del(clean_O318)
-clean_NOX19 = null_del(clean_NOX19)
-clean_O319 = null_del(clean_O319)
-clean_NOX20 = null_del(clean_NOX20)
-clean_O320 = null_del(clean_O320)
 
-##Se genera una función con la que se calcula la media por día entre todos
-##los puntos de muestreo, para cada contaminante por año. 
-comb_col = function(data, year) {
-    if (year == "2001") {
-        fechas = seq(as.Date("2001-1-1"), as.Date("2001-12-31"), "days")
-    }
-    if (year == "2002") {
-        fechas = seq(as.Date("2002-1-1"), as.Date("2002-12-31"), "days")
-    }
-    if (year == "2003") {
-        fechas = seq(as.Date("2003-1-1"), as.Date("2003-12-31"), "days")
-    }
-    if (year == "2004") {
-        fechas = seq(as.Date("2004-1-1"), as.Date("2004-12-31"), "days")
-    }
-    if (year == "2005") {
-        fechas = seq(as.Date("2005-1-1"), as.Date("2005-12-31"), "days")
-    }
-    if (year == "2006") {
-        fechas = seq(as.Date("2006-1-1"), as.Date("2006-12-31"), "days")
-    }
-    if (year == "2007") {
-        fechas = seq(as.Date("2007-1-1"), as.Date("2007-12-31"), "days")
-    }
-    if (year == "2008") {
-        fechas = seq(as.Date("2008-1-1"), as.Date("2008-12-31"), "days")
-    }
-    if (year == "2009") {
-        fechas = seq(as.Date("2009-1-1"), as.Date("2009-12-31"), "days")
-    }
-    if (year == "2010") {
-        fechas = seq(as.Date("2010-1-1"), as.Date("2010-12-31"), "days")
-    }
-    if (year == "2011") {
-        fechas = seq(as.Date("2011-1-1"), as.Date("2011-12-31"), "days")
-    }
-    if (year == "2012") {
-        fechas = seq(as.Date("2012-1-1"), as.Date("2012-12-31"), "days")
-    }
-    if (year == "2013") {
-        fechas = seq(as.Date("2013-1-1"), as.Date("2013-12-31"), "days")
-    }
-    if (year == "2014") {
-        fechas = seq(as.Date("2014-1-1"), as.Date("2014-12-31"), "days")
-    }
-    if (year == "2015") {
-        fechas = seq(as.Date("2015-1-1"), as.Date("2015-12-31"), "days")
-    }
-    if (year == "2016") {
-        fechas = seq(as.Date("2016-1-1"), as.Date("2016-12-31"), "days")
-    }
-    if (year == "2017") {
-        fechas = seq(as.Date("2017-1-1"), as.Date("2017-12-31"), "days")
-    }
-    if (year == "2018") {
-        fechas = seq(as.Date("2018-1-1"), as.Date("2018-12-31"), "days")
-    }
-    if (year == "2019") {
-        fechas = seq(as.Date("2019-1-1"), as.Date("2019-12-31"), "days")
-    }
-    if (year == "2020") {
-        fechas = seq(as.Date("2020-1-1"), as.Date("2020-12-31"), "days")
-    }
-    comb_data = rowMeans(data)
-    comb_df = data.frame(fechas, comb_data)
-    daymean = aggregate(. ~ fechas, comb_df, mean)
-    return(daymean)
+##Se extraen todos los archivos de las carpetas zip (formato .xls).
+original.wd = getwd()
+setwd(dest)
+zipfile = list.files(
+    path = dest,
+    pattern = "*.zip",
+    full.names = F)
+sapply(zipfile, unzip)
+
+##Cargar cada uno de los archivos por año para todos los contaminantes, 
+##radiación y temperatura, para usarlos como variables en data frames. De
+##igual manera, se renombra cada uno de los data frames. 
+poll_year = list.files(
+    path = dest,
+    pattern = 
+        "CO.xls|NO2.xls|NOX.xls|O3.xls|PM10.xls|PM25.xls|PMCO.xls|SO2.xls|NO.xls",
+    full.names = F)
+rad_year = unlist(list.files(
+    path = dest,
+    pattern = "UVB.xls",
+    full.names = F))
+temp_year = list.files(
+    path = dest,
+    pattern = "TMP.xls",
+    full.names = F)
+poll_data = sapply(poll_year, read_xls)
+rad_data = sapply(rad_year, read_xls)
+temp_data = sapply(temp_year, read_xls)
+df_poll = sapply(poll_data, as.data.frame)
+df_rad = sapply(rad_data, as.data.frame)
+df_temp = sapply(temp_data, as.data.frame)
+list_namespoll = names(df_poll)
+list_namesrad = names(df_rad)
+list_namestemp = names(df_temp)
+corr_namespoll = character()
+corr_namesrad = character()
+corr_namestemp = character()
+for (i in 1:length(list_namespoll)) {
+    xls_name = gsub("[.xls]", "", list_namespoll[i])
+    corr_namespoll[i] = xls_name
 }
-comb_NOX01 = data.frame(
-    fechas = c(
-        seq(as.Date("2001-1-1"), as.Date("2001-12-31"), "days")), comb_data = clean_NOX01)
-comb_NOX01 = aggregate(. ~ fechas, comb_NOX01, mean)
-comb_O301 = comb_col(clean_O301, 2001)
-comb_NOX02 = data.frame(
-    fechas = c(
-        seq(as.Date("2002-1-1"), as.Date("2002-12-31"), "days")), comb_data = clean_NOX02)
-comb_NOX02 = aggregate(. ~ fechas, comb_NOX02, mean)
-comb_O302 = comb_col(clean_O302, 2002)
-comb_NOX03 = comb_col(clean_NOX03, 2003)
-comb_O303 = comb_col(clean_O303, 2003)
-comb_NOX04 = comb_col(clean_NOX04, 2004)
-comb_O304 = comb_col(clean_O304, 2004)
-comb_NOX05 = comb_col(clean_NOX05, 2005)
-comb_O305 = comb_col(clean_O305, 2005)
-comb_NOX06 = comb_col(clean_NOX06, 2006)
-comb_O306 = comb_col(clean_O306, 2006)
-comb_NOX07 = comb_col(clean_NOX07, 2007)
-comb_O307 = comb_col(clean_O307, 2007)
-comb_NOX08 = comb_col(clean_NOX08, 2008)
-comb_O308 = comb_col(clean_O308, 2008)
-comb_NOX09 = comb_col(clean_NOX09, 2009)
-comb_O309 = comb_col(clean_O309, 2009)
-comb_NOX10 = comb_col(clean_NOX10, 2010)
-comb_O310 = comb_col(clean_O310, 2010)
-comb_NOX11 = comb_col(clean_NOX11, 2011)
-comb_O311 = comb_col(clean_O311, 2011)
-comb_NOX12 = comb_col(clean_NOX12, 2012)
-comb_O312 = comb_col(clean_O312, 2012)
-comb_NOX13 = comb_col(clean_NOX13, 2013)
-comb_O313 = comb_col(clean_O313, 2013)
-comb_NOX14 = comb_col(clean_NOX14, 2014)
-comb_O314 = comb_col(clean_O314, 2014)
-comb_NOX15 = comb_col(clean_NOX15, 2015)
-comb_O315 = comb_col(clean_O315, 2015)
-comb_NOX16 = comb_col(clean_NOX16, 2016)
-comb_O316 = comb_col(clean_O316, 2016)
-comb_NOX17 = comb_col(clean_NOX17, 2017)
-comb_O317 = comb_col(clean_O317, 2017)
-comb_NOX18 = comb_col(clean_NOX18, 2018)
-comb_O318 = comb_col(clean_O318, 2018)
-comb_NOX19 = comb_col(clean_NOX19, 2019)
-comb_O319 = comb_col(clean_O319, 2019)
-comb_NOX20 = comb_col(clean_NOX20, 2020)
-comb_O320 = comb_col(clean_O320, 2020)
+for (v in 1:length(list_namesrad)) {
+    xls_name = gsub("[radiacion_]|[.xls]", "", list_namesrad[v])
+    corr_namesrad[v] = xls_name
+}
+for (w in 1:length(list_namestemp)) {
+    xls_name = gsub("[.xls]", "", list_namestemp[w])
+    corr_namestemp[w] = xls_name
+}
+names(df_poll) = corr_namespoll
+names(df_rad) = corr_namesrad
+names(df_temp) = corr_namestemp
+setwd(original.wd)
 
-##La media anual por contaminante es calculada.
-NOX_means = data.frame(Año = c(2001:2020), 
-                       NOx = c(mean(comb_NOX01[,2]),
-                               mean(comb_NOX02[,2]),
-                               mean(comb_NOX03[,2]),
-                               mean(comb_NOX04[,2]),
-                               mean(comb_NOX05[,2]),
-                               mean(comb_NOX06[,2]),
-                               mean(comb_NOX07[,2]),
-                               mean(comb_NOX08[,2]),
-                               mean(comb_NOX09[,2]),
-                               mean(comb_NOX10[,2]),
-                               mean(comb_NOX11[,2]),
-                               mean(comb_NOX12[,2]),
-                               mean(comb_NOX13[,2]),
-                               mean(comb_NOX14[,2]),
-                               mean(comb_NOX15[,2]), 
-                               mean(comb_NOX16[,2]), 
-                               mean(comb_NOX17[,2]), 
-                               mean(comb_NOX18[,2]), 
-                               mean(comb_NOX19[,2]),
-                               mean(comb_NOX20[,2])))
-O3_means = data.frame(Año = c(2001:2020), 
-                      O3 = c(mean(comb_O301[,2]), 
-                             mean(comb_O302[,2]), 
-                             mean(comb_O303[,2]), 
-                             mean(comb_O304[,2]), 
-                             mean(comb_O305[,2]), 
-                             mean(comb_O306[,2]), 
-                             mean(comb_O307[,2]), 
-                             mean(comb_O308[,2]), 
-                             mean(comb_O309[,2]), 
-                             mean(comb_O310[,2]), 
-                             mean(comb_O311[,2]), 
-                             mean(comb_O312[,2]), 
-                             mean(comb_O313[,2]), 
-                             mean(comb_O314[,2]), 
-                             mean(comb_O315[,2]), 
-                             mean(comb_O316[,2]), 
-                             mean(comb_O317[,2]), 
-                             mean(comb_O318[,2]), 
-                             mean(comb_O319[,2]),
-                             mean(comb_O320[,2])))
-contmeans = merge(NOX_means, O3_means, by = "Año")
-media_cont = melt(contmeans, id.vars = "Año")
+##Las columnas que representan la hora y las estaciones de muestreo  que no
+##pertenecen a los datos de NDVI obtenidos son eliminados, teniendo así subsets
+##que enmbarcan las estaciones competentes (es decir, del sur). Para esto, 
+##se realizó un loop en el cual se creó, para cada data frame, un subset con
+##sólo las estaciones del sur.
+stations = c("PLA", "CES", "TAX", ##Estos 3 fueron sustituidos en el 2011 por
+                                    ##parte del rediseño del SIMAT.
+       "SFE", "AJU", "UAX", ##Estos 3 fueron los sustitutos integrados en el
+                            ##rediseño del SIMAT.
+       "PED", "COY", "CUA", "TPN", "TAH", "UIZ", "CHO")
+south_dat_poll = list()
+for (i in 1:length(df_poll)) {
+    df = df_poll[[i]]
+    Fecha = df[, "FECHA"]
+    new_df = data.frame(Fecha)
+    stat_name = names(df)
+    num = which(
+        !is.na(
+            match(stat_name, stations)))
+    correct_stat = stat_name[num]
+    for (x in 1:length(correct_stat)) {
+        stat = correct_stat[x]
+        stat_var = df[, stat]
+        new_df[x + 1] = stat_var
+        var = names(new_df[2:length(new_df)])[x]
+        colnames(new_df)[colnames(new_df) %in% var] = correct_stat[x]
+    }
+    south_dat_poll[[i]] = new_df
+}
+south_dat_rad = list()
+for (i in 1:length(df_rad)) {
+    df = df_rad[[i]]
+    colnames(df)[1] = "Fecha"
+    df_rad[[i]] = df
+}
+for (i in 1:length(df_rad)) {
+    df = df_rad[[i]]
+    Fecha = df[, "Fecha"]
+    new_df = data.frame(Fecha)
+    stat_name = names(df)
+    num = which(
+        !is.na(
+            match(stat_name, stations)))
+    correct_stat = stat_name[num]
+    for (x in 1:length(correct_stat)) {
+        stat = correct_stat[x]
+        stat_var = df[, stat]
+        new_df[1 + 1] = stat_var
+        var = names(new_df[2:length(new_df)])[x]
+        colnames(new_df)[colnames(new_df) %in% var] = correct_stat[x]
+    }
+    south_dat_rad[[i]] = new_df
+}
+south_dat_rad[[8]] = df_rad[[8]] ##Las estaciones de muestreo sur para radiación
+                                ##presentan valores nulos en su totalidad, así
+                                ##que se usa el resto de datos de estaciones para
+                                ##tener datos de radiación para ese año.
+south_dat_rad[[10]] = df_rad[[10]]
+south_dat_temp = list()
+for (i in 1:length(df_temp)) {
+    df = df_temp[[i]]
+    Fecha = df[, "FECHA"]
+    new_df = data.frame(Fecha)
+    stat_name = names(df)
+    num = which(
+        !is.na(
+            match(stat_name, stations)))
+    correct_stat = stat_name[num]
+    for (x in 1:length(correct_stat)) {
+        stat = correct_stat[x]
+        stat_var = df[, stat]
+        new_df[x + 1] = stat_var
+        var = names(new_df[2:length(new_df)])[x]
+        colnames(new_df)[colnames(new_df) %in% var] = correct_stat[x]
+    }
+    south_dat_temp[[i]] = new_df
+}
+names(south_dat_poll) = corr_namespoll
+names(south_dat_rad) = corr_namesrad
+names(south_dat_temp) = corr_namestemp
 
-##Una vez limpiados los datos, se crea un subset con las medias de cada
-##contaminante por cada fecha indicada en los registros para el índice de 
-##vegetación de MODIS. Para realizar esto, se combinan los data frames
-##de cada contaminante, para tener todas las fechas de este en un mismo
-##data frame.
-NOX_total = rbind(comb_NOX01, comb_NOX02, comb_NOX03, comb_NOX04, comb_NOX05,
-                  comb_NOX06, comb_NOX07, comb_NOX08, comb_NOX09, comb_NOX10,
-                  comb_NOX11, comb_NOX12, comb_NOX13, comb_NOX14,
-                  comb_NOX15, comb_NOX16, comb_NOX17, comb_NOX18, comb_NOX19, comb_NOX20)
-names(NOX_total) = c("Fechas", "NOx")
-O3_total = rbind(comb_O301, comb_O302, comb_O303, comb_O304, comb_O305, 
-                 comb_O306, comb_O307, comb_O308, comb_O309, comb_O310, 
-                 comb_O311, comb_O312, comb_O313, comb_O314,
-                 comb_O315, comb_O316, comb_O317, comb_O318, comb_O319, comb_O320)
-names(O3_total) = c("Fechas", "O3")
-NOX_VI = filter(NOX_total, Fechas %in% dates)
-O3_VI = filter(O3_total, Fechas %in% dates)
+##Debido a que existen valores nulos (representados como "-99"), se crea un
+##loop en el cual se estima el porcentaje de estos en relación a todas las
+##observaciones, esto con el fin de determinar el tratamiento de dichos valores.
+total_poll = numeric()
+null_ttl_poll = numeric()
+for (i in 1:length(south_dat_poll)) {
+    x = south_dat_poll[[i]]
+    x = x[, -1]
+    total_obs = ncol(x)*nrow(x)
+    total_poll[i] = total_obs
+    null_val = length(which(x == -99))
+    null_ttl_poll[i] = null_val
+    hun_per = sum(total_poll)
+    null_per = sum(null_ttl_poll)
+    tot_null_poll = (null_per*100)/hun_per
+}
+total_rad = numeric()
+null_ttl_rad = numeric()
+for (i in 1:length(south_dat_rad)) {
+    x = south_dat_rad[[i]]
+    x = x[, -1]
+    if (class(x) == "numeric") {
+        total_obs = length(x)
+    } else {
+        total_obs = ncol(x)*nrow(x)
+    }
+    total_rad[i] = total_obs
+    null_val = length(which(x == -99))
+    null_ttl_rad[i] = null_val
+    hun_per = sum(total_rad)
+    null_per = sum(null_ttl_rad)
+    tot_null_rad = (null_per*100)/hun_per
+}
+total_temp = numeric()
+null_ttl_temp = numeric()
+for (i in 1:length(south_dat_temp)) {
+    x = south_dat_temp[[i]]
+    x = x[, -1]
+    if (class(x) == "numeric") {
+        total_obs = length(x)
+    } else {
+        total_obs = ncol(x)*nrow(x)
+    }
+    total_temp[i] = total_obs
+    null_val = length(which(x == -99))
+    null_ttl_temp[i] = null_val
+    hun_per = sum(total_temp)
+    null_per = sum(null_ttl_temp)
+    tot_null_temp = (null_per*100)/hun_per
+}
+table.null = matrix(c(tot_null_poll, tot_null_rad, tot_null_temp), ncol = 1)
+colnames(table.null) = "NA's (%)"
+rownames(table.null) = c("Contaminantes", "Radiación", "Temperatura")
+NAs.table = as.table(table.null)
+NAs.table
 
-##Con la función merge, un nuevo data frame con ambas medias de los contaminantes
-##es creada.
-names(NOX_VI) = c("Fechas", "Contaminantes")
-names(O3_VI) = c("Fechas", "Contaminantes")
-cont_VI = rbind(NOX_VI, O3_VI)
-cont_VI$Contaminante = c(rep("NOx", 460), rep("O3", 460)) 
+##Se cambian todos los valores nulos -99 a NA para poder manejar los 
+##datos de mejor manera.
+NA_poll = list()
+for (i in 1:length(south_dat_poll)) {
+    z = south_dat_poll[[i]]
+    u = replace_with_na_all(z, ~. == -99)
+    NA_poll[[i]] = u
+}
+NA_rad = list()
+for (i in 1:length(south_dat_rad)) {
+    z = south_dat_rad[[i]]
+    u = replace_with_na_all(z, ~. == -99)
+    NA_rad[[i]] = u
+}
+NA_temp = list()
+for (i in 1:length(south_dat_temp)) {
+    z = south_dat_temp[[i]]
+    u = replace_with_na_all(z, ~. == -99)
+    NA_temp[[i]] = u
+}
+
+##Existen columnas que tienen un 100% de valores nulos, por lo que se 
+##eliminan.
+for (i in 1:length(NA_poll)) {
+    df = NA_poll[[i]]
+    df[, colSums(is.na(df)) != nrow(df)]
+    NA_poll[[i]] = df
+}
+for (i in 1:length(NA_rad)) {
+    df = NA_rad[[i]]
+    df[, colSums(is.na(df)) != nrow(df)]
+    NA_rad[[i]] = df
+}
+df = NA_rad[[20]]
+df[c(8041:8784),] = rep(NA, 744)
+Fecha = NA_poll$`2020SO2`[,1]
+df[,1] = Fecha
+NA_rad[[20]] = df
+for (i in 1:length(NA_temp)) {
+    df = NA_temp[[i]]
+    df[, colSums(is.na(df)) != nrow(df)]
+    NA_temp[[i]] = df
+}
+names(NA_poll) = corr_namespoll
+names(NA_rad) = corr_namesrad
+names(NA_temp) = corr_namestemp
+
+##Se aplica una prueba de MCAR de Little para determinar la distribución 
+##aleatoria de los NA's - H0 = Los datos son MCAR; Ha = Los datos no son
+##MCAR.
+MCARtest.poll = numeric()
+for (i in 1:length(NA_poll)) {
+    tryCatch({
+    test = mcar_test(NA_poll[[i]])
+    MCARtest.poll[i] = test$p.value
+    }, error = function(e){
+        cat("ERROR :", conditionMessage(e), "\n")})
+}
+MCARtest.rad = numeric()
+for (i in 1:length(NA_rad)) {
+    tryCatch({
+        test = mcar_test(NA_rad[[i]])
+        MCARtest.rad[i] = test$p.value
+    }, error = function(e){
+        cat("ERROR :", conditionMessage(e), "\n")})
+}
+MCARtest.temp = numeric()
+for (i in 1:length(NA_temp)) {
+    tryCatch({
+        test = mcar_test(NA_temp[[i]])
+        MCARtest.temp[i] = test$p.value
+    }, error = function(e){
+        cat("ERROR :", conditionMessage(e), "\n")})
+}
+MCARtest.poll 
+MCARtest.rad 
+MCARtest.temp ##Diversos df sueltan error: esto puede ser debido a la alta 
+            ##correlación entre las variables.
+
+##Los valores nulos entre los diferentes datos representan entre 20, 30 y 18%  
+##del total de observaciones, para contaminantes, radiación y temperatura 
+##respectivamente, además de que la mayoría de los df rechazan la H0 de la 
+##prueba de Little, por lo que no pueden ser eliminados. Se realiza una 
+##imputación de los valores nulos, utilizando el algoritmo de imputación por 
+##media móvil.
+impute_poll = sapply(NA_poll, na_ma)
+impute_rad = sapply(NA_rad, na_ma)
+impute_temp = sapply(NA_temp, na_ma)
+names(impute_poll) = corr_namespoll
+names(impute_rad) = corr_namesrad
+names(impute_temp) = corr_namestemp
+
+##Aún con todo el tratamiento, algunas columnas persisten con valores NA.
+##Se crea una función que es aplicada a todos los df para eliminar estas
+##columnas. 
+na_rm = function(df) {
+    df = df[, colSums(is.na(df)) == 0]
+}
+impu_poll = sapply(impute_poll, na_rm)
+impu_rad = sapply(impute_rad, na_rm)
+impu_temp = sapply(impute_temp, na_rm)
+names(impu_poll) = corr_namespoll
+names(impu_rad) = corr_namesrad
+names(impu_temp) = corr_namestemp
+
+##Se calcula la media por día entre todos los puntos de muestreo, para 
+##cada variable por año.
+day_poll = list()
+for (i in 1:length(impu_poll)) {
+    df = impu_poll[[i]]
+    Fecha = df$Fecha
+    DayMean = rowMeans(df[, -1])
+    comb_data = data.frame(Fecha, DayMean)
+    day_mean = aggregate(. ~ Fecha, comb_data, mean)
+    poll_name = corr_namespoll[i]
+    pollutant = substring(poll_name, 5)
+    names(day_mean) = c("Fecha", pollutant)
+    day_poll[[i]] = day_mean
+}
+day_rad = list()
+for (i in 1:length(impu_rad)) {
+    df = impu_rad[[i]]
+    Fecha = df$Fecha
+    DayMean = rowMeans(df[, -1])
+    comb_data = data.frame(Fecha, DayMean)
+    day_mean = aggregate(. ~ Fecha, comb_data, mean)
+    names(day_mean) = c("Fecha", "UVB")
+    day_rad[[i]] = day_mean
+}
+day_temp = list()
+for (i in 1:length(impu_temp)) {
+    df = impu_temp[[i]]
+    Fecha = df$Fecha
+    DayMean = rowMeans(df[, -1])
+    comb_data = data.frame(Fecha, DayMean)
+    day_mean = aggregate(. ~ Fecha, comb_data, mean)
+    names(day_mean) = c("Fecha", "Temperatura")
+    day_temp[[i]] = day_mean
+}
+names(day_poll) = corr_namespoll
+names(day_rad) = corr_namesrad
+names(day_temp) = corr_namestemp
+
+##Se combinan todos los df de cada variable, por año.
+sep_poll = sapply(corr_namespoll, substring, first = 5)
+complete_dat = list()
+for (i in 1:length(day_poll)) {
+    name = corr_namespoll[i]
+    poll_name = substring(name, 5)
+    pos = which(sep_poll %in% poll_name)
+    compl_list = list()
+    for (v in pos) {
+        df = day_poll[[v]]
+        compl_list[[v]] = df
+    }
+    complete_poll = bind_rows(compl_list)
+    complete_dat[[i]] = complete_poll
+}
+names(complete_dat)
+complete_dat = complete_dat[c(1:6, 11)]
+pollut_names = substring(corr_namespoll[c(1:6, 11)], 5)
+UVB = bind_rows(day_rad)
+TMP = bind_rows(day_temp)
+complete_dat[[8]] = UVB
+complete_dat[[9]] = TMP
+names(complete_dat) = c(pollut_names, "UVB", "TMP")
+
+##Se crea un subset con las medias de cada contaminante por cada fecha 
+##indicada en los registros para el índice de vegetación de MODIS. Se 
+##filtra cada df de contaminante usando las fechas - ya especificadas -  
+##de los datos MODIS.
+filt_list = list()
+for (i in 1:length(complete_dat)) {
+    df = complete_dat[[i]]
+    Fecha = as.Date(df$Fecha)
+    df$Fecha = Fecha
+    filt_df = filter(df, Fecha %in% dates)
+    filt_list[[i]] = filt_df
+}
+names(filt_list) = names(complete_dat)
+
+##Se combinan todas las variables en un mismo df (sólo aquellos que sin 
+##tengan registro desde el 2001 - NO, PM25 y PMCO cuentan con registros
+##posteriores).
+data_exp = data.frame(
+    NDVI = NDVI_df[,2], CO = filt_list$CO[,2], 
+    NO2 = filt_list$NO2[,2], NOx = filt_list$NOX[,2], 
+    O3 = filt_list$O3[,2], SO2 = filt_list$SO2[,2],
+    PM10 = filt_list$PM10[,2], UVB = filt_list$UVB[,2],
+    TMP = filt_list$TMP[,2])
 
 ##ANÁLISIS ESTADÍSTICOS
 
-##Primero se juntan todos los datos (contaminantes e NDVI) en un sólo df.
-data_exp = data.frame(
-    NOx = NOX_VI[,2], O3 = O3_VI[,2], NDVI = NDVI_df[,2])
-
-##Posteriormente se realiza una prueba de D'Agostino para la normalidad de
-##los datos, donde (con un alfa de 0.05):
+##Se realiza una prueba de D'Agostino para la normalidad de
+##los datos, primero para los contaminantes principales, donde:
+##(con un alfa de 0.05)
 ##H0 = Los datos tienen una distribución normal.
 ##Ha = Los datos no tienen una distribución normal.
 ##Y, si la oblicuidad es 0 = distribución normal.
 ##Si es menor a 1 = distribución medio normal.
 ##Mayor a 1 = distribución exponencial.
-agostino.test(data_exp$NOx) ##NOx
-agostino.test(data_exp$O3) ##O3
-agostino.test(data_exp$NDVI) ##NDVI
+t1 = agostino.test(data_exp$CO) ##CO
+t2 = agostino.test(data_exp$NO2) ##NO2
+t3 = agostino.test(data_exp$NOx) ##NOx
+t4 = agostino.test(data_exp$O3) ##O3
+t5 = agostino.test(data_exp$SO2) ##SO2
+t6 = agostino.test(data_exp$PM10) ##PM10
+t7 = agostino.test(data_exp$UVB) ##UVB
+t8 = agostino.test(data_exp$TMP) ##TMP 
+test_list = list(
+    t1, t2, t3, t4, t5, t6, t7, t8)
+test_names = c(
+    "CO", "NO2", "NOx", "O3", "SO2", "PM10", "UVB", "TMP")
+p_value = numeric()
+skew_val = numeric()
+for (i in 1:length(test_list)) {
+    test = test_list[[i]]
+    p.val = test$p.value
+    p_value[i] = p.val
+    skew = test$statistic
+    skew_val[[i]] = skew[1]
+}
+names(p_value) = test_names
+names(skew_val) = test_names
+names(p_value[p_value < 0.05])  ##Aquí aparecen los contaminantes que tienen
+                                ##un p-value menor al alfa, por lo que son 
+                                ##considerados como datos no normales.
+names(skew_val[skew_val == 0])  ##No hay ningún contaminante que tenga una
+                                ##oblicuidad igual a 0.
+names(skew_val[skew_val < 1])   ##Existen 5 contaminantes que tienen una
+                                ##oblicuidad menor a 1:
+                                ##NO2, NOx, O3, PM10 y TMP
+                                ##por lo que son considerados como datos con
+                                ##distribución medio normal. 
 
-##Al fallar el rechazo de H0 y contar con una oblicuidad muy cercana a 0,
-##contrastar con gráficas de densidad.
-NOX_dist = ggplot(data_exp, aes(x = NOx)) + geom_density() + 
-    geom_vline(aes(xintercept=mean(NOx), size = 2.5, color = "gray32"),
-               color = "#E69F00", linetype = "dashed", size = 2) +
-    ylab("Ocurrencia") + 
-    xlab("Concentración NOx (ppb)") +
-    ggtitle("Distribución de los datos de concentración de NOx") +
-    theme(plot.title = element_text(hjust = 0.5)) + 
-    theme(axis.text.x = element_text(
-        vjust = 0.5, hjust=1, size = 10, color = "black"),
-        axis.text.y = element_text(vjust = 0.5, hjust = 1, size = 10, 
-                                   color = "black"),
-        plot.margin = margin(2.2, 0.5, 2.2, 0.5, "cm"),
-        panel.background = element_rect(fill = "white"),
-        axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5)) 
-NOX_dist
-O3_dist = ggplot(data_exp, aes(x = O3)) + geom_density() + 
-    geom_vline(aes(xintercept=mean(O3), size = 2.5, color = "gray32"),
-               color = "#E69F00", linetype = "dashed", size = 2) +
-    ylab("Ocurrencia") + 
-    xlab("Concentración O3 (ppb)") +
-    ggtitle("Distribución de los datos de concentración de O3") +
-    theme(plot.title = element_text(hjust = 0.5)) + 
-    theme(axis.text.x = element_text(
-        vjust = 0.5, hjust=1, size = 10, color = "black"),
-        axis.text.y = element_text(vjust = 0.5, hjust = 1, size = 10, 
-                                   color = "black"),
-        plot.margin = margin(2.2, 0.5, 2.2, 0.5, "cm"),
-        panel.background = element_rect(fill = "white"),
-        axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5)) 
-O3_dist
-NDVI_dist = ggplot(data_exp, aes(x = NDVI)) + geom_density() + 
-    geom_vline(aes(xintercept = mean(NDVI), size = 2.5, color = "gray32"),
-               color = "#E69F00", linetype = "dashed", size = 2) +
-    ylab("Ocurrencia") + 
-    xlab("NDVI") +
-    ggtitle("Distribución de NDVI") +
-    theme(plot.title = element_text(hjust = 0.5)) + 
-    theme(axis.text.x = element_text(
-        vjust = 0.5, hjust=1, size = 10, color = "black"),
-        axis.text.y = element_text(vjust = 0.5, hjust = 1, size = 10, 
-                                   color = "black"),
-        plot.margin = margin(2.2, 0.5, 2.2, 0.5, "cm"),
-        panel.background = element_rect(fill = "white"),
-        axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5)) 
-NDVI_dist
-
-##Para realizar este análisis, se utiliza una regresión lineal simple,
-##con una prueba de significancia de la pendiente. Se tienen dos hipótesis:
-##Ho = No existe relación significativa entre los contaminantes y el VI,
-##por lo que las medias son iguales.
+##Debido a que todos los datos presentan una distribución no normal, se realiza
+##un análisis de regresión lineal multivariada no paramétrica, con prueba de
+##significancia de la pendiente - esta prueba sólo se realiza con los 
+##contaminantes que presentan la misma longitud y unidad; el resto será 
+##probado con una regresión no paramétrica simple -.
+##Se tienen dos hipótesis:
+##Ho = Las medias de las variables son iguales, por lo que no hay relación 
+##significativa entre los contaminantes y el VI.
 ##Ha = Las medias de las variables son diferentes, por lo que sí hay 
 ##una relación.
-##Se describe una función para obtener la tabla de ANOVA con los cálculos
-##de significancia competentes.
-rel_NOX = data.frame(x = data_exp[,1], y = data_exp[,3])
-rel_O3 = data.frame(x = data_exp[,2], y = data_exp[,3])
-estad_prueb = function(data) {
-    ajuste = lm(data[,2] ~ data[,1], x = TRUE)
-    y = data[,2]
-    n = length(y)
-    ss_t = sum(y^2) - sum(y)^2 / n
-    ss_r = matrix(
-        coef(ajuste), nrow = 1) %*% t(ajuste$x) %*% matrix(y, ncol=1) - sum(y)^2 / n
-    ss_res = ss_t - ss_r
-    ms_r = ss_r / (
-        length(coef(ajuste))-1)
-    ms_res = ss_res / (
-        n-length(coef(ajuste)))
-    F0 = ms_r / ms_res
-    valorP = pf(
-        F0, df1=length(coef(ajuste))-1, 
-        df2=(n-length(coef(ajuste))), lower.tail=FALSE)
-    tabla = matrix(NA, ncol = 5, nrow = 3)
-    tabla[1, ] = c(
-        ss_r, length(coef(ajuste))-1, ms_r, F0, valorP)
-    tabla[2, 1:3] = c(
-        ss_res, n-length(coef(ajuste)), ms_res)
-    tabla[3, 1:2] = c(
-        ss_t, n-1)
-    colnames(tabla) = c(
-        'Suma Cuadrados', 'gl', 'Cuadrado medio', 'F0', 'Valor-P')
-    rownames(tabla) = c(
-        'Reg', 'Resid', 'Total')
-    return(tabla)
-}
-estad_prueb(rel_NOX)
-estad_prueb(rel_O3)
-
-##Para contrastar los datos, realizar una prueba de correlación de Pearson.
-cor.test(rel_NOX$x, rel_NOX$y, method = "pearson")
-cor.test(rel_O3$x, rel_NOX$y, method = "pearson")
+##La prueba se realiza para cada contaminante (ahora separados por unidad
+##y por la longitud de los datos).
+prueb.est = npregbw(
+    formula = NDVI ~ CO + NO2 + NOx + O3 + SO2 + PM10 + UVB + TMP,
+    data = data_exp,
+    x = TRUE, y = TRUE)
+model.np = npreg(bws = prueb.est)
+summary(model.np) ##El R^2 es 0.4104033 (41.04%).
+npsigtest(model.np) ##Las variables que presentan una correlación significativa
+                    ##con NDVI son NO2, O3 y PM10.
 
 ##PLOTS
 
-##Se realiza un plot de time series de los valores de índice de vegetación
-##para el sur de la CDMX. Se elmimnan todos los valores menores a 0.1,
-##ya que estos ya no representan áreas fotosintéticas. 
-índices = c(0.1, 0.2, 0.3)
-ts_NDVI = ggplot(
-    NULL, aes(
-        x = Fechas, y = NDVI)) +
-    ylab("Índice de Vegetación de Diferencia Normalizada") + 
-    xlab("") +
-    ggtitle("Diferencia del NDVI del sur de CDMX en los últimos 20 años") +
+##Las relaciones lineales para cada variable (con relación significativa)
+## con NDVI son representadas en gráficas de dispersión, con una línea de 
+##regresión. 
+
+indices = c(0.1, 0.2, 0.3)
+q.NO2 = ggplot(
+    data_exp, aes(x = NO2, y = NDVI)) + 
+    ylab("") + 
+    xlab("NO2 (ppb)") +
     theme(plot.title = element_text(hjust = 0.5)) +
-    scale_x_date(date_breaks = "year", date_labels = "%Y") +
     theme(axis.text.x = element_text(
-        angle = 45, vjust = 0.5, hjust=1, size = 10, color = "black"),
+        vjust = 0.5, hjust=1, size = 10, color = "black"),
         axis.text.y = element_text(vjust = 0.5, hjust = 1, size = 10, 
                                    color = "black"),
-        plot.margin = margin(2.2, 0.5, 2.2, 0.5, "cm"),
+        plot.margin = margin(0, 0, 0, 0, "cm"),
         panel.background = element_rect(fill = "white"),
         axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5)) +
+        axis.line.y = element_line(color="black", size = 0.5)) + 
     geom_hline(
-        mapping = NULL, yintercept = índices, colour = "grey80") +
-    geom_line(
-        data = NDVI_df, color = "gray32", size = 1) 
-ts_NDVI
-
-##Un time series de los contaminantes es creado.
-índices_cont = c(20, 30, 40, 50, 60)
-ts_cont = ggplot(
-    cont_VI, aes(
-        x = Fechas, y = Contaminantes,
-        group = Contaminante, col = Contaminante, fill = Contaminante)) +
-    scale_color_manual(values=c('grey51','#E69F00')) +
-    ylab("Concentración de contaminantes (ppb)") + 
-    xlab("") +
-    ggtitle("Evolución de la concentración de NOx y O3 en el sur de la CDMX desde el 2001 al 2020") +
+        mapping = NULL, yintercept = indices, colour = "grey80") +
+    geom_point(size = 1, color = "gray32") +
+    geom_smooth(
+        method = "lm", color = "dodgerblue1", size = 1.5, formula = y ~ x) +
+    geom_label(
+        x = 59, y = 0.33,
+        label = "P-Value = 0.0025")
+q.O3 = ggplot(
+    data_exp, aes(x = O3, y = NDVI)) + 
+    ylab("") + 
+    xlab("O3 (ppb)")+
     theme(plot.title = element_text(hjust = 0.5)) +
-    scale_x_date(
-        date_breaks = "year", date_labels = "%Y") +
+    theme(axis.text.x = element_text(
+        vjust = 0.5, hjust=1, size = 10, color = "black"),
+        axis.text.y = element_text(vjust = 0.5, hjust = 1, size = 10, 
+                                   color = "black"),
+        plot.margin = margin(0, 0, 0, 0, "cm"),
+        panel.background = element_rect(fill = "white"),
+        axis.line.x = element_line(color="black", size = 0.5),
+        axis.line.y = element_line(color="black", size = 0.5)) + 
+    geom_hline(
+        mapping = NULL, yintercept = indices, colour = "grey80") +
+    geom_point(size = 1, color = "gray32") +
+    geom_smooth(
+        method = "lm", color = "darkorange1", size = 1.5, formula = y ~ x) +
+    geom_label(
+        x = 65.9, y = 0.33,
+        label = "P-Value = 0.0275")
+q.PM10 = ggplot(
+    data_exp, aes(x = NO2, y = NDVI)) + 
+    ylab("") + 
+    xlab("PM10 (µg/m^3)")+
+    theme(plot.title = element_text(hjust = 0.5)) +
+    theme(axis.text.x = element_text(
+        vjust = 0.5, hjust=1, size = 10, color = "black"),
+        axis.text.y = element_text(vjust = 0.5, hjust = 1, size = 10, 
+                                   color = "black"),
+        plot.margin = margin(0, 0, 0, 0, "cm"),
+        panel.background = element_rect(fill = "white"),
+        axis.line.x = element_line(color="black", size = 0.5),
+        axis.line.y = element_line(color="black", size = 0.5)) + 
+    geom_hline(
+        mapping = NULL, yintercept = indices, colour = "grey80") +
+    geom_point(size = 1, color = "gray32") +
+    geom_smooth(
+        method = "lm", color = "brown1", size = 1.5, formula = y ~ x) +
+    geom_label(
+        x = 59, y = 0.33,
+        label = "P-Value = 0.0125")
+egg::ggarrange(
+    q.NO2, q.O3, q.PM10, left = "NDVI")
+    
+##Se realiza los time series de todos los contaminantes con correlación, junto
+##al time series de NDVI.
+dates = cont_VI[1:460, 1]
+date.polls = data.frame(
+    dates, NDVI = data_exp$NDVI,
+    NO2 = data_exp$NO2, O3 = data_exp$O3,
+    PM10 = data_exp$PM10)
+indices.cont = c(0, 20, 40, 60)
+ts.NO2 = ggplot(
+    date.polls, aes(x = dates, y = NO2)) + 
+    ylab("NO2 (ppb)") + 
+    xlab("")+
     theme(
         axis.text.x = element_text(
-            angle = 45, vjust = 0.5, hjust=1, size = 10, color = "black"),
+            angle = 0, vjust = 1, hjust= 0.5, size = 10, color = "black"),
         axis.text.y = element_text(
             vjust = 0.5, hjust = 1, size = 10, color = "black"),
-        plot.margin = margin(2.2, 0.1, 2.2, 0.1, "cm"),
+        plot.margin = margin(0, 0.1, 0, 0.1, "cm"),
         panel.background = element_rect(fill = "white"),
         axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5)) +
+        axis.line.y = element_line(color="black", size = 0.5))  + 
+    scale_x_date(
+        date_breaks = "2 years", date_labels = "%Y") +
     geom_hline(
-        mapping = NULL, yintercept = índices_cont, colour = "grey80") +
-    geom_line(size = 1)
-ts_cont   
-
-##Para poder observar la relación entre los contaminantes y el índice de
-##vegetación, se hacen gráficas de disperción con sus respectivas líneas
-##de regresión, y ecuaciones de la pendiente.
-lm_eq = function(df) {
-    m = lm(y ~ x, df);
-    eq = substitute((y) == a + b %.% (x)*","~~(r)^2~"="~r2, 
-                    list(a = format(unname(coef(m)[1]), digits = 2),
-                         b = format(unname(coef(m)[2]), digits = 2),
-                         r2 = format(summary(m)$r.squared, digits = 3)))
-    as.character(as.expression(eq));
-}
-índices = c(0.1, 0.2, 0.3)
-relación_NOX = tibble(x = NOX_VI[,2], y = NDVI_df[,2])
-rel_NOX = ggplot(
-    data = relación_NOX, aes(x = x, y = y)) +
-    ylab("") + 
-    xlab("NOx (ppb)")+
-    theme(plot.title = element_text(hjust = 0.5)) +
-    theme(axis.text.x = element_text(
-        vjust = 0.5, hjust=1, size = 10, color = "black"),
-        axis.text.y = element_text(vjust = 0.5, hjust = 1, size = 10, 
-                                   color = "black"),
-        plot.margin = margin(1.5, 0, 1.5, 0, "cm"),
+        mapping = NULL, yintercept = indices.cont, colour = "grey80") +
+    geom_line(color = "grey28", size = 0.5) + 
+    stat_smooth(method = "loess", color = "dodgerblue3", fill = "dodgerblue1") 
+ts.O3 = ggplot(
+    date.polls, aes(x = dates, y = O3)) + 
+    ylab("O3 (ppb)") + 
+    xlab("")+
+    theme(
+        axis.text.x = element_text(
+            angle = 0, vjust = 1, hjust= 0.5, size = 10, color = "black"),
+        axis.text.y = element_text(
+            vjust = 0.5, hjust = 1, size = 10, color = "black"),
+        plot.margin = margin(0, 0.1, 0, 0.1, "cm"),
         panel.background = element_rect(fill = "white"),
         axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5)) +
+        axis.line.y = element_line(color="black", size = 0.5))  + 
+    scale_x_date(
+        date_breaks = "2 years", date_labels = "%Y") +
     geom_hline(
-        mapping = NULL, yintercept = índices, colour = "grey80") +
-    geom_point(size = 1, color = "gray32") + 
-    geom_smooth(
-        method = "lm", color = "grey51", size = 1.5, formula = y ~ x)  +
-    geom_label(
-        x = 50, y = 0.35, label = lm_eq(relación_NOX), parse = TRUE)
-relación_O3 = tibble(x = O3_VI[,2], y = NDVI_df[,2])
-rel_O3 = ggplot(
-    data = relación_O3, aes(x = x, y = y)) +
-    ylab("") + 
-    xlab("O3 (ppb)") +
-    theme(plot.title = element_text(hjust = 0.5)) +
-    theme(axis.text.x = element_text(
-        vjust = 0.5, hjust=1, size = 10, color = "black"),
-        plot.margin = margin(0, 1.5, 0, 1.5, "cm"),
+        mapping = NULL, yintercept = indices.cont, colour = "grey80") +
+    geom_line(color = "grey28", size = 0.5) +
+    stat_smooth(method = "loess", color = "darkorange3", fill = "darkorange1") 
+indices..cont = c(0, 30, 60, 90)
+ts.PM10 = ggplot(
+    date.polls, aes(x = dates, y = PM10)) + 
+    ylab("PM10 (µg/m^3)") + 
+    xlab("")+
+    theme(
+        axis.text.x = element_text(
+            angle = 0, vjust = 1, hjust= 0.5, size = 10, color = "black"),
+        axis.text.y = element_text(
+            vjust = 0.5, hjust = 1, size = 10, color = "black"),
+        plot.margin = margin(0, 0.1, 0, 0.1, "cm"),
         panel.background = element_rect(fill = "white"),
         axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5)) +
+        axis.line.y = element_line(color="black", size = 0.5))  + 
+    scale_x_date(
+        date_breaks = "2 years", date_labels = "%Y") +
     geom_hline(
-        mapping = NULL, yintercept = índices, colour = "grey80") +
-    geom_point(size = 1, color = "gray32") + 
-    geom_smooth(method = "lm", color = "#E69F00", size = 1.5, 
-                formula = y ~ x) +
-    geom_label(
-        x = 40, y = 0.35, label = lm_eq(relación_O3), parse = TRUE)
-egg::ggarrange(
-    rel_NOX, rel_O3,
-    left = "Índice de Vegetación de Diferencia Normalizada",
-    top = "Relaciones entre contaminantes e Índice de Vegetación")
-
-##Se realiza una serie de heatmaps de las medias de NDVI anuales.
-hm_01 = ggplot(VI2001, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2001") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
+        mapping = NULL, yintercept = indices..cont, colour = "grey80") +
+    geom_line(color = "grey28", size = 0.5) +
+    stat_smooth(method = "loess", color = "brown3", fill = "brown1") 
+ts.NDVI = ggplot(
+    date.polls, aes(x = dates, y = NDVI)) + 
+    ylab("NDVI") + 
+    xlab("")+
     theme(
-        axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        plot.margin = margin(0, 0, 0, 0, "cm"),
+        axis.text.x = element_text(
+            angle = 0, vjust = 1, hjust= 0.5, size = 10, color = "black"),
+        axis.text.y = element_text(
+            vjust = 0.5, hjust = 1, size = 10, color = "black"),
+        plot.margin = margin(0, 0.1, 0, 0.1, "cm"),
         panel.background = element_rect(fill = "white"),
         axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5))
-hm_02 = ggplot(VI2002, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2002") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_03 = ggplot(VI2003, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2003") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_04 = ggplot(VI2004, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2004") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_05 = ggplot(VI2005, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2005") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(
-        axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        plot.margin = margin(0, 0, 0, 0, "cm"),
-        panel.background = element_rect(fill = "white"),
-        axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5))
-hm_06 = ggplot(VI2006, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2006") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_07 = ggplot(VI2007, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2007") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_08 = ggplot(VI2008, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2008") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_09 = ggplot(VI2009, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2009") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(
-        axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        plot.margin = margin(0, 0, 0, 0, "cm"),
-        panel.background = element_rect(fill = "white"),
-        axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5))
-hm_10 = ggplot(VI2010, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2010") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_11 = ggplot(VI2011, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2011") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_12 = ggplot(VI2012, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2012") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_13 = ggplot(VI2013, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2013") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(
-        axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        plot.margin = margin(0, 0, 0, 0, "cm"),
-        panel.background = element_rect(fill = "white"),
-        axis.line.x = element_line(color="black", size = 0.5),
-        axis.line.y = element_line(color="black", size = 0.5))
-hm_14 = ggplot(VI2014, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2014") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_15 = ggplot(VI2015, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2015") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_16 = ggplot(VI2016, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2016") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_17 = ggplot(VI2017, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2017") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.text.x = element_text(angle = 45,
-                                     vjust = 0.5, hjust=1, size = 10),
-          axis.text.y = element_text(vjust = 0.5, hjust = 1, size = 10, 
-                                     color = "black"),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_18 = ggplot(VI2018, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2018") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.text.x = element_text(angle = 45,
-                                     vjust = 0.5, hjust=1, size = 10, color = "black"),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_19 = ggplot(VI2019, aes(x = x, y = y, fill = z)) + 
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2019") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.text.x = element_text(angle = 45,
-                                     vjust = 0.5, hjust=1, size = 10, color = "black"),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-hm_20 = ggplot(VI2020, aes(x = x, y = y, fill = z)) +
-    geom_tile() +
-    scale_fill_gradient(
-        low="orange2", high="darkgreen", trans = "sqrt", name = "NDVI") +
-    scale_alpha(range = c(0.5, 1.0)) +
-    ylab("") + 
-    xlab("") +
-    ggtitle("2020") +
-    theme(plot.title = element_text(hjust = 0.5, size = 10)) +
-    theme(legend.title = element_blank(),
-          legend.position = "none") +
-    theme(axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.text.x = element_text(angle = 45,
-                                     vjust = 0.5, hjust=1, size = 10, color = "black"),
-          plot.margin = margin(0, 0, 0, 0, "cm"),
-          panel.background = element_rect(fill = "white"),
-          axis.line.x = element_line(color="black", size = 0.5),
-          axis.line.y = element_line(color="black", size = 0.5))
-egg::ggarrange(hm_01, hm_02, hm_03, hm_04, hm_05, hm_06, hm_07, hm_08, hm_09,
-               hm_10, hm_11, hm_12, hm_13, hm_14, hm_15, hm_16, hm_17, hm_18,
-               hm_19, hm_20, top = "Heatmaps de la media anual de NDVI en el sur de la CDMX")
+        axis.line.y = element_line(color="black", size = 0.5))  + 
+    scale_x_date(
+        date_breaks = "2 years", date_labels = "%Y") +
+    geom_hline(
+        mapping = NULL, yintercept = indicescont, colour = "grey80") +
+    geom_line(color = "grey28", size = 0.5) +
+    stat_smooth(method = "loess", color = "purple4", fill = "purple1") 
+egg::ggarrange(ts.NO2, ts.O3, ts.PM10, ts.NDVI, ncol = 1)
